@@ -27,8 +27,8 @@ public class SupplierInventory implements IWandSupplier {
     protected final EntityPlayer player;
     protected final WandOptions options;
 
-    protected Map<ItemBlock, Integer> itemCounts;
-    protected IPool<ItemBlock> itemPool;
+    protected Map<ItemStack, Integer> itemCounts;
+    protected IPool<ItemStack> itemPool;
 
     public SupplierInventory(EntityPlayer player, WandOptions options) {
         this.player = player;
@@ -36,33 +36,46 @@ public class SupplierInventory implements IWandSupplier {
     }
 
     @Override
-    public void getSupply(@Nullable ItemBlock target) {
+    public void getSupply(@Nullable ItemStack target) {
         itemCounts = new LinkedHashMap<>();
         itemPool = new OrderedPool<>();
 
         ItemStack offhandStack = player.getHeldItemOffhand();
         if (!offhandStack.isEmpty() && offhandStack.getItem() instanceof ItemBlock) {
-            addBlockItem((ItemBlock) offhandStack.getItem());
+            addBlockStack(offhandStack);
             return;
         }
 
-        if (target != null) {
-            addBlockItem(target);
+        if (target != null && !target.isEmpty() && target.getItem() instanceof ItemBlock) {
+            addBlockStack(target);
             if (options.match.get() != WandOptions.MATCH.EXACT) {
-                for (Item item : ReplacementRegistry.getMatchingSet(target)) {
+                ItemBlock targetItem = (ItemBlock) target.getItem();
+                for (Item item : ReplacementRegistry.getMatchingSet(targetItem)) {
                     if (item instanceof ItemBlock) {
-                        addBlockItem((ItemBlock) item);
+                        addMatchingStacksFromInventory(item);
                     }
                 }
             }
         }
     }
 
-    protected void addBlockItem(ItemBlock item) {
-        int count = player.isCreative() ? Integer.MAX_VALUE : WandUtil.countItem(player, item);
+    protected void addBlockStack(ItemStack stack) {
+        if (stack.isEmpty() || !(stack.getItem() instanceof ItemBlock)) {
+            return;
+        }
+
+        ItemStack normalized = stack.copy();
+        normalized.setCount(1);
+
+        int count = player.isCreative() ? Integer.MAX_VALUE : countItems(normalized);
         if (count > 0) {
-            itemCounts.put(item, count);
-            itemPool.add(item);
+            ItemStack key = findTrackedStack(normalized);
+            if (key == null) {
+                itemCounts.put(normalized, count);
+                itemPool.add(normalized);
+            } else {
+                itemCounts.put(key, itemCounts.get(key) + count);
+            }
         }
     }
 
@@ -75,22 +88,22 @@ public class SupplierInventory implements IWandSupplier {
         itemPool.reset();
 
         while (true) {
-            ItemBlock item = itemPool.draw();
-            if (item == null) {
+            ItemStack stack = itemPool.draw();
+            if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof ItemBlock)) {
                 return null;
             }
 
-            Integer count = itemCounts.get(item);
+            Integer count = itemCounts.get(stack);
             if (count == null || count == 0) {
                 continue;
             }
 
-            PlaceSnapshot snapshot = PlaceSnapshot.get(world, player, rayTraceResult, pos, item, supportingBlock, options);
+            PlaceSnapshot snapshot = PlaceSnapshot.get(world, player, rayTraceResult, pos, stack, supportingBlock, options);
             if (snapshot != null) {
                 int remaining = count - 1;
-                itemCounts.put(item, remaining);
+                itemCounts.put(stack, remaining);
                 if (remaining <= 0) {
-                    itemPool.remove(item);
+                    itemPool.remove(stack);
                 }
                 return snapshot;
             }
@@ -104,18 +117,17 @@ public class SupplierInventory implements IWandSupplier {
             return 0;
         }
 
-        Item item = stack.getItem();
         List<ItemStack> hotbar = WandUtil.getHotbarWithOffhand(player);
         List<ItemStack> mainInv = WandUtil.getMainInv(player);
 
-        count = takeItemsInvList(count, item, mainInv, false);
-        count = takeItemsInvList(count, item, mainInv, true);
-        count = takeItemsInvList(count, item, hotbar, true);
-        count = takeItemsInvList(count, item, hotbar, false);
+        count = takeItemsInvList(count, stack, mainInv, false);
+        count = takeItemsInvList(count, stack, mainInv, true);
+        count = takeItemsInvList(count, stack, hotbar, true);
+        count = takeItemsInvList(count, stack, hotbar, false);
         return count;
     }
 
-    private int takeItemsInvList(int count, Item item, List<ItemStack> inventory, boolean container) {
+    private int takeItemsInvList(int count, ItemStack requiredStack, List<ItemStack> inventory, boolean container) {
         ContainerManager containerManager = ConstructionWand.instance.containerManager;
 
         for (ItemStack inventoryStack : inventory) {
@@ -124,11 +136,11 @@ public class SupplierInventory implements IWandSupplier {
             }
 
             if (container) {
-                count = containerManager.useItems(player, new ItemStack(item), inventoryStack, count);
+                count = containerManager.useItems(player, requiredStack, inventoryStack, count);
                 continue;
             }
 
-            if (WandUtil.stackEquals(inventoryStack, item)) {
+            if (WandUtil.stackEquals(inventoryStack, requiredStack)) {
                 int toTake = Math.min(count, inventoryStack.getCount());
                 inventoryStack.shrink(toTake);
                 count -= toTake;
@@ -137,5 +149,52 @@ public class SupplierInventory implements IWandSupplier {
         }
 
         return count;
+    }
+
+    private int countItems(ItemStack requiredStack) {
+        int total = 0;
+        ContainerManager containerManager = ConstructionWand.instance.containerManager;
+
+        for (ItemStack inventoryStack : WandUtil.getHotbarWithOffhand(player)) {
+            if (WandUtil.stackEquals(inventoryStack, requiredStack)) {
+                total += inventoryStack.getCount();
+            } else {
+                total += containerManager.countItems(player, requiredStack, inventoryStack);
+            }
+        }
+
+        for (ItemStack inventoryStack : WandUtil.getMainInv(player)) {
+            if (WandUtil.stackEquals(inventoryStack, requiredStack)) {
+                total += inventoryStack.getCount();
+            } else {
+                total += containerManager.countItems(player, requiredStack, inventoryStack);
+            }
+        }
+
+        return total;
+    }
+
+    @Nullable
+    private ItemStack findTrackedStack(ItemStack query) {
+        for (ItemStack stack : itemCounts.keySet()) {
+            if (WandUtil.stackEquals(stack, query)) {
+                return stack;
+            }
+        }
+        return null;
+    }
+
+    private void addMatchingStacksFromInventory(Item item) {
+        for (ItemStack inventoryStack : WandUtil.getHotbarWithOffhand(player)) {
+            if (!inventoryStack.isEmpty() && inventoryStack.getItem() == item) {
+                addBlockStack(inventoryStack);
+            }
+        }
+
+        for (ItemStack inventoryStack : WandUtil.getMainInv(player)) {
+            if (!inventoryStack.isEmpty() && inventoryStack.getItem() == item) {
+                addBlockStack(inventoryStack);
+            }
+        }
     }
 }

@@ -17,13 +17,13 @@ public class SupplierRandom extends SupplierInventory {
     }
 
     @Override
-    public void getSupply(@Nullable ItemBlock target) {
+    public void getSupply(@Nullable ItemStack target) {
         itemCounts = new LinkedHashMap<>();
         itemPool = new RandomPool<>(new Random());
 
         for (ItemStack stack : WandUtil.getHotbarWithOffhand(player)) {
             if (stack.getItem() instanceof ItemBlock) {
-                addBlockItem((ItemBlock) stack.getItem());
+                addBlockStack(stack);
             }
         }
     }

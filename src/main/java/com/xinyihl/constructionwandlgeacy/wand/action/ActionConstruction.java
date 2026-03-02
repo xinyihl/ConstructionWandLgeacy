@@ -7,10 +7,10 @@ import com.xinyihl.constructionwandlgeacy.basics.option.WandOptions;
 import com.xinyihl.constructionwandlgeacy.wand.undo.ISnapshot;
 import com.xinyihl.constructionwandlgeacy.wand.undo.PlaceSnapshot;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.util.EnumFacing;
-import net.minecraft.util.math.BlockPos;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.EnumFacing;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
 
@@ -53,7 +53,7 @@ public class ActionConstruction implements IWandAction {
                 BlockPos supportingPoint = currentCandidate.offset(placeDirection.getOpposite());
                 IBlockState candidateSupportingBlock = world.getBlockState(supportingPoint);
 
-                if (options.matchBlocks(targetBlock.getBlock(), candidateSupportingBlock.getBlock())
+                if (options.matchBlocks(targetBlock, candidateSupportingBlock)
                         && allCandidates.add(currentCandidate)) {
                         PlaceSnapshot snapshot = supplier.getPlaceSnapshot(world, currentCandidate, rayTraceResult,
                             candidateSupportingBlock);

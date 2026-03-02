@@ -56,7 +56,7 @@ public class ActionDestruction implements IWandAction {
 
             try {
                 IBlockState candidateBlock = world.getBlockState(currentCandidate);
-                if (options.matchBlocks(targetBlock.getBlock(), candidateBlock.getBlock())
+                if (options.matchBlocks(targetBlock, candidateBlock)
                         && allCandidates.add(currentCandidate)) {
                     DestroySnapshot snapshot = DestroySnapshot.get(world, player, currentCandidate);
                     if (snapshot == null) {

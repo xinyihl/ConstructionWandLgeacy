@@ -4,7 +4,7 @@ import com.xinyihl.constructionwandlgeacy.api.IWandCore;
 import com.xinyihl.constructionwandlgeacy.api.IWandUpgrade;
 import com.xinyihl.constructionwandlgeacy.basics.ReplacementRegistry;
 import com.xinyihl.constructionwandlgeacy.items.core.CoreDefault;
-import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
@@ -76,14 +76,21 @@ public class WandOptions {
         return lock.get() == checkLock;
     }
 
-    public boolean matchBlocks(Block first, Block second) {
+    public boolean matchBlocks(IBlockState first, IBlockState second) {
+        if (first == null || second == null) {
+            return false;
+        }
+
+        int firstMeta = first.getBlock().getMetaFromState(first);
+        int secondMeta = second.getBlock().getMetaFromState(second);
+
         switch (match.get()) {
             case EXACT:
-                return first == second;
+                return first.getBlock() == second.getBlock() && firstMeta == secondMeta;
             case SIMILAR:
-                return ReplacementRegistry.matchBlocks(first, second);
+                return ReplacementRegistry.matchBlocks(first.getBlock(), second.getBlock());
             case ANY:
-                return first != Blocks.AIR && second != Blocks.AIR;
+                return first.getBlock() != Blocks.AIR && second.getBlock() != Blocks.AIR;
             default:
                 return false;
         }

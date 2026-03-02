@@ -4,11 +4,10 @@ import com.xinyihl.constructionwandlgeacy.items.wand.ItemWand;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
-import net.minecraft.util.EnumFacing;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
@@ -33,25 +32,6 @@ public final class WandUtil {
         return first.getItem() == second.getItem()
                 && first.getMetadata() == second.getMetadata()
                 && ItemStack.areItemStackTagsEqual(first, second);
-    }
-
-    public static boolean stackEquals(ItemStack stack, Item item) {
-        return !stack.isEmpty() && stack.getItem() == item;
-    }
-
-    public static int countItem(EntityPlayer player, Item item) {
-        int total = 0;
-        for (ItemStack stack : player.inventory.mainInventory) {
-            if (stackEquals(stack, item)) {
-                total += stack.getCount();
-            }
-        }
-
-        ItemStack offhand = player.getHeldItemOffhand();
-        if (stackEquals(offhand, item)) {
-            total += offhand.getCount();
-        }
-        return total;
     }
 
     public static List<ItemStack> getHotbarWithOffhand(EntityPlayer player) {
@@ -100,11 +80,12 @@ public final class WandUtil {
         return world.setBlockState(pos, state, 3);
     }
 
-    public static boolean placeBlockAt(World world, EntityPlayer player, BlockPos pos, ItemBlock item,
+    public static boolean placeBlockAt(World world, EntityPlayer player, BlockPos pos, ItemStack placeStack,
                                        IBlockState state, @Nullable RayTraceResult rayTraceResult) {
-        if (item == null) {
+        if (placeStack.isEmpty() || !(placeStack.getItem() instanceof ItemBlock)) {
             return false;
         }
+        ItemBlock item = (ItemBlock) placeStack.getItem();
 
         EnumFacing facing = rayTraceResult != null && rayTraceResult.sideHit != null ? rayTraceResult.sideHit : EnumFacing.UP;
         float hitX = 0.5F;
@@ -118,7 +99,8 @@ public final class WandUtil {
             hitZ = (float) hit.z;
         }
 
-        ItemStack stack = new ItemStack(item, 1, item.getMetadata(0));
+        ItemStack stack = placeStack.copy();
+        stack.setCount(1);
         IBlockState placedAgainst = world.getBlockState(pos.offset(facing.getOpposite()));
         BlockSnapshot snapshot = BlockSnapshot.getBlockSnapshot(world, pos);
 
@@ -138,18 +120,21 @@ public final class WandUtil {
         return true;
     }
 
-    public static boolean removeBlock(World world, @Nullable EntityPlayer player, BlockPos pos) {
-        return removeBlock(world, player, null, pos);
-    }
-
     public static boolean removeBlock(World world, @Nullable EntityPlayer player, @Nullable IBlockState expectedBlock, BlockPos pos) {
         IBlockState state = world.getBlockState(pos);
         if (state.getBlock().isAir(state, world, pos)) {
             return false;
         }
 
-        if (expectedBlock != null && !ReplacementRegistry.matchBlocks(state.getBlock(), expectedBlock.getBlock())) {
-            return false;
+        if (expectedBlock != null) {
+            if (!ReplacementRegistry.matchBlocks(state.getBlock(), expectedBlock.getBlock())) {
+                return false;
+            }
+            int currentMeta = state.getBlock().getMetaFromState(state);
+            int expectedMeta = expectedBlock.getBlock().getMetaFromState(expectedBlock);
+            if (currentMeta != expectedMeta) {
+                return false;
+            }
         }
 
         if (player == null) {

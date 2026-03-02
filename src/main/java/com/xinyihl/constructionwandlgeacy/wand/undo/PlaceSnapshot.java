@@ -4,31 +4,31 @@ import com.xinyihl.constructionwandlgeacy.basics.WandUtil;
 import com.xinyihl.constructionwandlgeacy.basics.option.WandOptions;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
-import net.minecraft.block.properties.IProperty;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumFacing;
+import net.minecraft.util.EnumHand;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.EnumHand;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
 
 public class PlaceSnapshot implements ISnapshot {
 	private IBlockState block;
 	private final BlockPos pos;
+	private final ItemStack itemStack;
 	private final ItemBlock item;
 	private final IBlockState supportingBlock;
 	private final boolean targetMode;
 
-	public PlaceSnapshot(IBlockState block, BlockPos pos, ItemBlock item, @Nullable IBlockState supportingBlock, boolean targetMode) {
+	public PlaceSnapshot(IBlockState block, BlockPos pos, ItemStack itemStack, ItemBlock item, @Nullable IBlockState supportingBlock, boolean targetMode) {
 		this.block = block;
 		this.pos = pos;
+		this.itemStack = itemStack;
 		this.item = item;
 		this.supportingBlock = supportingBlock;
 		this.targetMode = targetMode;
@@ -36,15 +36,19 @@ public class PlaceSnapshot implements ISnapshot {
 
 	@Nullable
 	public static PlaceSnapshot get(World world, EntityPlayer player, RayTraceResult rayTraceResult,
-									BlockPos pos, ItemBlock item,
+									BlockPos pos, ItemStack itemStack,
 									@Nullable IBlockState supportingBlock,
 									@Nullable WandOptions options) {
+		if (!(itemStack.getItem() instanceof ItemBlock)) {
+			return null;
+		}
+		ItemBlock item = (ItemBlock) itemStack.getItem();
 		boolean targetMode = options != null && supportingBlock != null && options.direction.get() == WandOptions.DIRECTION.TARGET;
-		IBlockState state = getPlaceBlockState(world, player, rayTraceResult, pos, item, supportingBlock, targetMode);
+		IBlockState state = getPlaceBlockState(world, player, rayTraceResult, pos, itemStack, item, supportingBlock, targetMode);
 		if (state == null) {
 			return null;
 		}
-		return new PlaceSnapshot(state, pos, item, supportingBlock, targetMode);
+		return new PlaceSnapshot(state, pos, itemStack.copy(), item, supportingBlock, targetMode);
 	}
 
 	@Override
@@ -57,40 +61,10 @@ public class PlaceSnapshot implements ISnapshot {
 		return block;
 	}
 
-	@Override
-	public ItemStack getRequiredItems() {
-		return new ItemStack(item);
-	}
-
-	@Override
-	public boolean execute(World world, EntityPlayer player, RayTraceResult rayTraceResult) {
-		IBlockState recalculated = getPlaceBlockState(world, player, rayTraceResult, pos, item, supportingBlock, targetMode);
-		if (recalculated == null) {
-			return false;
-		}
-		block = recalculated;
-		return WandUtil.placeBlockAt(world, player, pos, item, block, rayTraceResult);
-	}
-
-	@Override
-	public boolean canRestore(World world, EntityPlayer player) {
-		return world.isBlockModifiable(player, pos);
-	}
-
-	@Override
-	public boolean restore(World world, EntityPlayer player) {
-		return WandUtil.removeBlock(world, player, block, pos);
-	}
-
-	@Override
-	public void forceRestore(World world) {
-		world.setBlockToAir(pos);
-	}
-
 	@Nullable
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private static IBlockState getPlaceBlockState(World world, EntityPlayer player, RayTraceResult rayTraceResult,
-												   BlockPos pos, ItemBlock item,
+												  BlockPos pos, ItemStack itemStack, ItemBlock item,
 												   @Nullable IBlockState supportingBlock, boolean targetMode) {
 		Block block = item.getBlock();
 		EnumFacing facing = rayTraceResult == null || rayTraceResult.sideHit == null ? EnumFacing.UP : rayTraceResult.sideHit;
@@ -109,33 +83,65 @@ public class PlaceSnapshot implements ISnapshot {
 			return null;
 		}
 
-		IBlockState state = block.getStateForPlacement(world, pos, facing, hitX, hitY, hitZ, item.getMetadata(0), player, EnumHand.MAIN_HAND);
+		IBlockState state = block.getStateForPlacement(world, pos, facing, hitX, hitY, hitZ, itemStack.getMetadata(), player, EnumHand.MAIN_HAND);
 		if (state == null) {
 			state = block.getDefaultState();
 		}
 
-		if (targetMode && supportingBlock != null) {
-			Collection<IProperty<?>> sourceProps = supportingBlock.getPropertyKeys();
-			for (IProperty property : state.getPropertyKeys()) {
-				IProperty<?> source = sourceProps.stream()
-						.filter(p -> p.getName().equals(property.getName()))
-						.findFirst()
-						.orElse(null);
-				if (source == null) {
-					continue;
-				}
-
-				Comparable value = supportingBlock.getValue((IProperty) source);
-				if (property.getAllowedValues().contains(value)) {
-					state = state.withProperty(property, value);
-				}
-			}
-		}
+//		if (targetMode && supportingBlock != null) {
+//			Collection<IProperty<?>> sourceProps = supportingBlock.getPropertyKeys();
+//			for (IProperty property : state.getPropertyKeys()) {
+//				IProperty<?> source = sourceProps.stream()
+//						.filter(p -> p.getName().equals(property.getName()))
+//						.findFirst()
+//						.orElse(null);
+//				if (source == null) {
+//					continue;
+//				}
+//
+//				Comparable value = supportingBlock.getValue((IProperty) source);
+//				if (property.getAllowedValues().contains(value)) {
+//					state = state.withProperty(property, value);
+//				}
+//			}
+//		}
 
 		AxisAlignedBB aabb = state.getCollisionBoundingBox(world, pos);
 		if (aabb != null && !world.checkNoEntityCollision(aabb.offset(pos))) {
 			return null;
 		}
 		return state;
+	}
+
+	@Override
+	public ItemStack getRequiredItems() {
+		ItemStack required = itemStack.copy();
+		required.setCount(1);
+		return required;
+	}
+
+	@Override
+	public boolean canRestore(World world, EntityPlayer player) {
+		return world.isBlockModifiable(player, pos);
+	}
+
+	@Override
+	public boolean restore(World world, EntityPlayer player) {
+		return WandUtil.removeBlock(world, player, block, pos);
+	}
+
+	@Override
+	public void forceRestore(World world) {
+		world.setBlockToAir(pos);
+	}
+
+	@Override
+	public boolean execute(World world, EntityPlayer player, RayTraceResult rayTraceResult) {
+		IBlockState recalculated = getPlaceBlockState(world, player, rayTraceResult, pos, itemStack, item, supportingBlock, targetMode);
+		if (recalculated == null) {
+			return false;
+		}
+		block = recalculated;
+		return WandUtil.placeBlockAt(world, player, pos, itemStack, block, rayTraceResult);
 	}
 }

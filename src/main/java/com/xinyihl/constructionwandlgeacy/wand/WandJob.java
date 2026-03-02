@@ -10,6 +10,8 @@ import com.xinyihl.constructionwandlgeacy.items.wand.ItemWand;
 import com.xinyihl.constructionwandlgeacy.wand.supplier.SupplierInventory;
 import com.xinyihl.constructionwandlgeacy.wand.supplier.SupplierRandom;
 import com.xinyihl.constructionwandlgeacy.wand.undo.ISnapshot;
+import net.minecraft.block.Block;
+import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
@@ -54,13 +56,25 @@ public class WandJob {
     }
 
     @Nullable
-    private static ItemBlock getTargetItem(World world, RayTraceResult rayTraceResult) {
+    private static ItemStack getTargetItem(World world, RayTraceResult rayTraceResult) {
         if (rayTraceResult == null || rayTraceResult.getBlockPos() == null) {
             return null;
         }
 
-        Item item = Item.getItemFromBlock(world.getBlockState(rayTraceResult.getBlockPos()).getBlock());
-        return item instanceof ItemBlock ? (ItemBlock) item : null;
+        IBlockState state = world.getBlockState(rayTraceResult.getBlockPos());
+        Block block = state.getBlock();
+        if (block == null) {
+            return null;
+        }
+
+        Item blockItem = Item.getItemFromBlock(block);
+        if (!(blockItem instanceof ItemBlock)) {
+            return null;
+        }
+
+        ItemBlock item = (ItemBlock) blockItem;
+        int metadata = block.damageDropped(state);
+        return new ItemStack(item, 1, metadata);
     }
 
     public void getSnapshots() {
