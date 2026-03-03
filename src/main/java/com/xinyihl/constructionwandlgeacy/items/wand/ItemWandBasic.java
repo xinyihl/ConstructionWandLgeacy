@@ -1,6 +1,6 @@
 package com.xinyihl.constructionwandlgeacy.items.wand;
 
-import com.xinyihl.constructionwandlgeacy.basics.ConfigServer;
+import com.xinyihl.constructionwandlgeacy.basics.config.ConfigServer;
 import net.minecraft.item.ItemStack;
 
 public class ItemWandBasic extends ItemWand {

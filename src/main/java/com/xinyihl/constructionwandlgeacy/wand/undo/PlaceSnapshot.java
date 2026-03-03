@@ -1,8 +1,10 @@
 package com.xinyihl.constructionwandlgeacy.wand.undo;
 
 import com.xinyihl.constructionwandlgeacy.basics.WandUtil;
+import com.xinyihl.constructionwandlgeacy.basics.config.ConfigServer;
 import com.xinyihl.constructionwandlgeacy.basics.option.WandOptions;
 import net.minecraft.block.Block;
+import net.minecraft.block.properties.IProperty;
 import net.minecraft.block.state.IBlockState;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemBlock;
@@ -16,6 +18,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 import javax.annotation.Nullable;
+import java.util.Collection;
 
 public class PlaceSnapshot implements ISnapshot {
 	private IBlockState block;
@@ -45,7 +48,7 @@ public class PlaceSnapshot implements ISnapshot {
 		ItemBlock item = (ItemBlock) itemStack.getItem();
 		boolean targetMode = options != null && supportingBlock != null && options.direction.get() == WandOptions.DIRECTION.TARGET;
 		IBlockState state = getPlaceBlockState(world, player, rayTraceResult, pos, itemStack, item, supportingBlock, targetMode);
-		if (state == null) {
+		if (state == null || !ConfigServer.isPlacementAllowed(itemStack, state)) {
 			return null;
 		}
 		return new PlaceSnapshot(state, pos, itemStack.copy(), item, supportingBlock, targetMode);
@@ -84,27 +87,28 @@ public class PlaceSnapshot implements ISnapshot {
 		}
 
 		IBlockState state = block.getStateForPlacement(world, pos, facing, hitX, hitY, hitZ, itemStack.getMetadata(), player, EnumHand.MAIN_HAND);
-		if (state == null) {
-			state = block.getDefaultState();
-		}
 
-//		if (targetMode && supportingBlock != null) {
-//			Collection<IProperty<?>> sourceProps = supportingBlock.getPropertyKeys();
-//			for (IProperty property : state.getPropertyKeys()) {
-//				IProperty<?> source = sourceProps.stream()
-//						.filter(p -> p.getName().equals(property.getName()))
-//						.findFirst()
-//						.orElse(null);
-//				if (source == null) {
-//					continue;
-//				}
-//
-//				Comparable value = supportingBlock.getValue((IProperty) source);
-//				if (property.getAllowedValues().contains(value)) {
-//					state = state.withProperty(property, value);
-//				}
-//			}
-//		}
+		if (targetMode && supportingBlock != null) {
+			Collection<IProperty<?>> sourceProps = supportingBlock.getPropertyKeys();
+			for (IProperty property : state.getPropertyKeys()) {
+				if (!ConfigServer.isPropertyCopyAllowed(property)) {
+					continue;
+				}
+
+				IProperty<?> source = sourceProps.stream()
+						.filter(p -> p.getName().equals(property.getName()))
+						.findFirst()
+						.orElse(null);
+				if (source == null) {
+					continue;
+				}
+
+				Comparable value = supportingBlock.getValue((IProperty) source);
+				if (property.getAllowedValues().contains(value)) {
+					state = state.withProperty(property, value);
+				}
+			}
+		}
 
 		AxisAlignedBB aabb = state.getCollisionBoundingBox(world, pos);
 		if (aabb != null && !world.checkNoEntityCollision(aabb.offset(pos))) {
@@ -127,7 +131,19 @@ public class PlaceSnapshot implements ISnapshot {
 
 	@Override
 	public boolean restore(World world, EntityPlayer player) {
-		return WandUtil.removeBlock(world, player, block, pos);
+		if (!WandUtil.removeBlock(world, player, block, pos)) {
+			return false;
+		}
+
+		if (!player.isCreative()) {
+			ItemStack refund = getRequiredItems();
+			if (!player.inventory.addItemStackToInventory(refund)) {
+				player.dropItem(refund, false);
+			}
+			player.inventory.markDirty();
+		}
+
+		return true;
 	}
 
 	@Override

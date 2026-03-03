@@ -1,7 +1,8 @@
 package com.xinyihl.constructionwandlgeacy;
 
-import com.xinyihl.constructionwandlgeacy.basics.ReplacementRegistry;
 import com.xinyihl.constructionwandlgeacy.basics.CommonEvents;
+import com.xinyihl.constructionwandlgeacy.basics.ReplacementRegistry;
+import com.xinyihl.constructionwandlgeacy.basics.config.ConfigServer;
 import com.xinyihl.constructionwandlgeacy.client.ClientEvents;
 import com.xinyihl.constructionwandlgeacy.client.RenderBlockPreview;
 import com.xinyihl.constructionwandlgeacy.containers.ContainerManager;
@@ -30,11 +31,11 @@ public class ConstructionWand {
     public ContainerManager containerManager;
     public UndoHistory undoHistory;
     private CommonEvents commonEvents;
-    private RenderBlockPreview renderBlockPreview;
 
     @EventHandler
     public void preInit(FMLPreInitializationEvent event) {
         LOGGER = event.getModLog();
+        ConfigServer.sync();
         containerManager = new ContainerManager();
         undoHistory = new UndoHistory();
         commonEvents = new CommonEvents();
@@ -43,7 +44,7 @@ public class ConstructionWand {
 
         if (event.getSide() == Side.CLIENT) {
             MinecraftForge.EVENT_BUS.register(new ClientEvents());
-            renderBlockPreview = new RenderBlockPreview();
+            RenderBlockPreview renderBlockPreview = new RenderBlockPreview();
             MinecraftForge.EVENT_BUS.register(renderBlockPreview);
         }
     }

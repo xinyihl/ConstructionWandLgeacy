@@ -3,7 +3,7 @@ package com.xinyihl.constructionwandlgeacy.wand;
 import com.xinyihl.constructionwandlgeacy.ConstructionWand;
 import com.xinyihl.constructionwandlgeacy.api.IWandAction;
 import com.xinyihl.constructionwandlgeacy.api.IWandSupplier;
-import com.xinyihl.constructionwandlgeacy.basics.ConfigServer;
+import com.xinyihl.constructionwandlgeacy.basics.config.ConfigServer;
 import com.xinyihl.constructionwandlgeacy.basics.option.WandOptions;
 import com.xinyihl.constructionwandlgeacy.items.ModItems;
 import com.xinyihl.constructionwandlgeacy.items.wand.ItemWand;
@@ -57,15 +57,12 @@ public class WandJob {
 
     @Nullable
     private static ItemStack getTargetItem(World world, RayTraceResult rayTraceResult) {
-        if (rayTraceResult == null || rayTraceResult.getBlockPos() == null) {
+        if (rayTraceResult == null) {
             return null;
         }
 
         IBlockState state = world.getBlockState(rayTraceResult.getBlockPos());
         Block block = state.getBlock();
-        if (block == null) {
-            return null;
-        }
 
         Item blockItem = Item.getItemFromBlock(block);
         if (!(blockItem instanceof ItemBlock)) {

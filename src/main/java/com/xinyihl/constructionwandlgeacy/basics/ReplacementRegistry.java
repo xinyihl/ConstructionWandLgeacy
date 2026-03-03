@@ -1,6 +1,7 @@
 package com.xinyihl.constructionwandlgeacy.basics;
 
 import com.xinyihl.constructionwandlgeacy.ConstructionWand;
+import com.xinyihl.constructionwandlgeacy.basics.config.ConfigServer;
 import net.minecraft.block.Block;
 import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;

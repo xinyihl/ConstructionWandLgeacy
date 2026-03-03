@@ -1,7 +1,7 @@
 package com.xinyihl.constructionwandlgeacy.crafting;
 
 import com.xinyihl.constructionwandlgeacy.api.IWandUpgrade;
-import com.xinyihl.constructionwandlgeacy.basics.ConfigServer;
+import com.xinyihl.constructionwandlgeacy.basics.config.ConfigServer;
 import com.xinyihl.constructionwandlgeacy.basics.option.WandOptions;
 import com.xinyihl.constructionwandlgeacy.items.wand.ItemWand;
 import net.minecraft.inventory.InventoryCrafting;

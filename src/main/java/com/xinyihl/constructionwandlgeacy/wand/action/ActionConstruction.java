@@ -2,7 +2,7 @@ package com.xinyihl.constructionwandlgeacy.wand.action;
 
 import com.xinyihl.constructionwandlgeacy.api.IWandAction;
 import com.xinyihl.constructionwandlgeacy.api.IWandSupplier;
-import com.xinyihl.constructionwandlgeacy.basics.ConfigServer;
+import com.xinyihl.constructionwandlgeacy.basics.config.ConfigServer;
 import com.xinyihl.constructionwandlgeacy.basics.option.WandOptions;
 import com.xinyihl.constructionwandlgeacy.wand.undo.ISnapshot;
 import com.xinyihl.constructionwandlgeacy.wand.undo.PlaceSnapshot;

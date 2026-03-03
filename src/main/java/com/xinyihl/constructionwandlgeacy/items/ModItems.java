@@ -2,7 +2,7 @@ package com.xinyihl.constructionwandlgeacy.items;
 
 import com.xinyihl.constructionwandlgeacy.ConstructionWand;
 import com.xinyihl.constructionwandlgeacy.Tags;
-import com.xinyihl.constructionwandlgeacy.basics.ConfigServer;
+import com.xinyihl.constructionwandlgeacy.basics.config.ConfigServer;
 import com.xinyihl.constructionwandlgeacy.basics.option.WandOptions;
 import com.xinyihl.constructionwandlgeacy.items.core.ItemCoreAngel;
 import com.xinyihl.constructionwandlgeacy.items.core.ItemCoreDestruction;

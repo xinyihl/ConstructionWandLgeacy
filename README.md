@@ -57,6 +57,59 @@ Minecraft 1.12.2 上的 Construction Wand 功能回移植（Forge）。
 
 > 注意：GUI 仅在“右键空气”时打开，避免与右键方块撤销冲突。
 
+## 配置文件
+
+首次启动后会生成配置文件（Forge 默认 `config/constructionwandlgeacy.cfg`）。
+
+### 可配置项
+
+- `wandLimits.stoneWandMaxBlocks`：石手杖默认最大放置数量
+- `wandLimits.ironWandMaxBlocks`：铁手杖默认最大放置数量
+- `wandLimits.diamondWandMaxBlocks`：钻石手杖默认最大放置数量
+- `wandLimits.infinityWandMaxBlocks`：无尽手杖默认最大放置数量
+- `placement.allowTileEntityPlacement`：是否允许手杖放置带 TileEntity 的方块
+- `placement.blockWhitelist`：放置白名单（为空表示不启用白名单）
+- `placement.blockBlacklist`：放置黑名单
+- `placement.propertyCopyWhitelist`：`TARGET` 模式下允许复制的属性名关键字白名单（如 `facing`、`axis`）
+
+白名单/黑名单条目格式：
+
+- `modid:block`（匹配该方块所有变体）
+- `modid:block@meta`（只匹配指定 meta）
+
+示例：
+
+```cfg
+placement {
+  B:allowTileEntityPlacement=false
+  S:propertyCopyWhitelist <
+    facing
+    axis
+    rotation
+    half
+    hinge
+    shape
+    part
+    face
+   >
+  S:blockWhitelist <
+    minecraft:stone
+    minecraft:stained_hardened_clay@14
+   >
+  S:blockBlacklist <
+    minecraft:chest
+    minecraft:mob_spawner
+   >
+}
+
+wandLimits {
+  I:stoneWandMaxBlocks=9
+  I:ironWandMaxBlocks=27
+  I:diamondWandMaxBlocks=81
+  I:infinityWandMaxBlocks=256
+}
+```
+
 ## 开发构建
 
 ### 环境要求
