@@ -33,7 +33,7 @@ public class RenderBlockPreview {
     private RayTraceResult lastHit;
     private ItemStack lastWand = ItemStack.EMPTY;
 
-    @SubscribeEvent
+    @SubscribeEvent(receiveCanceled = true)
     public void onDrawBlockHighlight(DrawBlockHighlightEvent event) {
         RayTraceResult target = event.getTarget();
         EntityPlayer player = event.getPlayer();
