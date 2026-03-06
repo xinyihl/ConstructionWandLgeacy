@@ -66,10 +66,10 @@ public final class WandUtil {
 
     public static boolean isPositionPlaceable(World world, EntityPlayer player, BlockPos pos, boolean replace) {
         IBlockState state = world.getBlockState(pos);
-        if (state.getMaterial().isReplaceable()) {
-            return true;
+        if (replace) {
+            return state.getMaterial().isReplaceable();
         }
-        return replace && world.isAirBlock(pos);
+        return world.isAirBlock(pos);
     }
 
     public static boolean placeBlock(World world, EntityPlayer player, IBlockState state, BlockPos pos) {
