@@ -1,83 +1,74 @@
 # ConstructionWandLgeacy
 
-Minecraft 1.12.2 上的 Construction Wand 功能回移植（Forge）。
+Backport of Construction Wand features for Minecraft 1.12.2 (Forge).
 
-> 当前仓库为开发中版本，目标是尽量保持与高版本 Construction Wand 的交互与行为一致。
+## Implemented Features
 
-## 项目信息
+### Items and Core Modules
+- 4 wand types: Stone / Iron / Diamond / Infinity
+- 2 cores: Angel / Destruction
+- Core overlay model and tinting (wand appearance changes after installing a core)
 
-- Mod ID: `constructionwandlgeacy`
-- Minecraft: `1.12.2`
-- 构建系统: Gradle + RetroFuturaGradle
-- 当前版本: `0.0.1`
+### Placement and Destruction Logic
+- Construction mode
+- Angel mode: supports mid-air placement
+- Destruction mode
+- Uses an interaction flow close to the original implementation:
+  - Placement goes through `ItemBlock.placeBlockAt`
+  - Breaking goes through `removedByPlayer` + `onPlayerDestroy`
+  - Integrated with Forge Place/Break events
 
-## 已实现内容
+### Upgrades and Options
+- Core installation upgrade (combine wand + core in the crafting grid)
+- Toggleable options (lock/direction/replace/match/random/core)
+- Wand GUI (open with key combo while right-clicking in air)
 
-### 物品与核心
-- 4 种手杖：Stone / Iron / Diamond / Infinity
-- 2 种核心：Angel / Destruction
-- 核心覆盖层模型与着色（装备核心后手杖外观变化）
+### Undo and Preview
+- Undo history
+- Undo preview sync (triggered by key query)
+- Automatic preview refresh after undo
+- Preview colors:
+  - Destruction core: red
+  - Undo preview: green
+  - Angel core supports air-target preview
 
-### 放置与破坏逻辑
-- 建筑模式（Construction）
-- 天使模式（Angel）：支持空中放置
-- 破坏模式（Destruction）
-- 使用接近原版的交互链路：
-  - 放置走 `ItemBlock.placeBlockAt`
-  - 破坏走 `removedByPlayer` + `onPlayerDestroy`
-  - 集成 Forge Place/Break 事件
-
-### 升级与选项
-- 核心安装升级（手杖 + 核心在合成网格组合）
-- 可切换选项（锁定/方向/替换/匹配/随机/核心）
-- 手杖 GUI（空中右键组合键打开）
-
-### 撤销与预览
-- 撤销历史记录
-- 撤销预览同步（按键查询）
-- 撤销后预览自动刷新
-- 预览颜色：
-  - Destruction 核心为红色
-  - Undo 预览为绿色
-  - Angel 核心支持空气目标预览
-
-### 资源与本地化
-- 完整物品模型与贴图
+### Assets and Localization
+- Complete item models and textures
 - `en_us.lang` / `zh_cn.lang`
 
-## 默认操作说明
+## Default Controls
 
-以下为当前实现的默认交互：
+Current default interactions:
 
-- `Shift + Ctrl + 鼠标滚轮`：切换锁定模式
-- `Shift + Ctrl + 左键空挥`：切换核心
-- `Shift + Ctrl + 右键空气`：打开手杖配置 GUI
-- `Shift + Ctrl`（按住）：显示可撤销预览
-- `Shift + 右键方块`（手持手杖）：执行撤销
+- `Shift + Ctrl + Mouse Wheel`: toggle lock mode
+- `Shift + Ctrl + Left Click` (swing in air): switch core
+- `Shift + Ctrl + Right Click` (in air): open wand config GUI
+- Hold `Shift + Ctrl`: show undo preview
+- `Shift + Right Click` on block (while holding wand): perform undo
 
-> 注意：GUI 仅在“右键空气”时打开，避免与右键方块撤销冲突。
+> Note: The GUI only opens when right-clicking in air, to avoid conflicts with block right-click undo.
 
-## 配置文件
+## Configuration File
 
-首次启动后会生成配置文件（Forge 默认 `config/constructionwandlgeacy.cfg`）。
+A config file is generated after first launch (Forge default: `config/constructionwandlgeacy.cfg`).
 
-### 可配置项
+### Configurable Options
 
-- `wandLimits.stoneWandMaxBlocks`：石手杖默认最大放置数量
-- `wandLimits.ironWandMaxBlocks`：铁手杖默认最大放置数量
-- `wandLimits.diamondWandMaxBlocks`：钻石手杖默认最大放置数量
-- `wandLimits.infinityWandMaxBlocks`：无尽手杖默认最大放置数量
-- `placement.allowTileEntityPlacement`：是否允许手杖放置带 TileEntity 的方块
-- `placement.blockWhitelist`：放置白名单（为空表示不启用白名单）
-- `placement.blockBlacklist`：放置黑名单
-- `placement.propertyCopyWhitelist`：`TARGET` 模式下允许复制的属性名关键字白名单（如 `facing`、`axis`）
+- `wandLimits.stoneWandMaxBlocks`: default max placement count for Stone Wand
+- `wandLimits.ironWandMaxBlocks`: default max placement count for Iron Wand
+- `wandLimits.diamondWandMaxBlocks`: default max placement count for Diamond Wand
+- `wandLimits.infinityWandMaxBlocks`: default max placement count for Infinity Wand
+- `placement.allowTileEntityPlacement`: whether wand placement of TileEntity blocks is allowed
+- `placement.blockWhitelist`: placement whitelist (empty means whitelist disabled)
+- `placement.blockBlacklist`: placement blacklist
+- `placement.propertyCopyWhitelist`: keyword whitelist of property names allowed to copy in `TARGET` mode (e.g. `facing`, `axis`)
 
-白名单/黑名单条目格式：
+Whitelist/blacklist entry formats:
 
-- `modid:block`（匹配该方块所有变体）
-- `modid:block@meta`（只匹配指定 meta）
+- `modid:block` (matches all variants of the block)
+- `modid:block@meta` (matches only the specific meta)
 
-示例：
+Example:
 
 ```cfg
 placement {
@@ -110,24 +101,24 @@ wandLimits {
 }
 ```
 
-## 开发构建
+## Development Build
 
-### 环境要求
-- 推荐使用 JDK 17 运行 Gradle（项目会使用 Java Toolchain 编译到 Java 8 目标）
-- Windows 下使用 `gradlew.bat`，Linux/macOS 使用 `./gradlew`
+### Requirements
+- JDK 17 is recommended to run Gradle (the project uses Java Toolchain to compile to Java 8 target)
+- Use `gradlew.bat` on Windows, and `./gradlew` on Linux/macOS
 
-### 常用命令
+### Common Commands
 
 ```bash
-# 编译源码
+# Compile source code
 ./gradlew compileJava
 
-# 处理资源
+# Process resources
 ./gradlew processResources
 
-# 构建产物
+# Build artifacts
 ./gradlew build
 
-# 运行开发客户端
+# Run development client
 ./gradlew runClient
 ```
